@@ -92,10 +92,14 @@ impl Ray {
 
 impl Camera {
     pub fn new(vfov: f64, aspect_ratio: f64, focal_length: f64) -> Camera {
-        return Camera { vfov: (vfov), aspect_ratio: (aspect_ratio), focal_length: (focal_length) }
+        Camera { 
+            vfov: vfov.to_radians(),
+            aspect_ratio: (aspect_ratio),
+            focal_length: (focal_length) 
+        }
     }
     pub fn get_ray(&self, u: f64, v:f64) -> Ray {
-        let theta = &self.vfov.to_radians();
+        let theta = &self.vfov;
         let h = (theta/2.0).tan() * &self.focal_length;
         let viewport_height = 2.0 * h;
         let viewport_width = &self.aspect_ratio * viewport_height;
