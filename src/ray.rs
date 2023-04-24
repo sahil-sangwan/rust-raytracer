@@ -1,17 +1,58 @@
-use std::vec::Vec;
-/**
- * Required Types:
- * 3D Position vector and RGB Color vector
- * Implements mul, add, sub, div traits (use inline operators)
- * (impl traits for both types)
- */
-pub struct Camera {
-    pub vfov: f64,
-    pub aspect_ratio: f64,
-    pub focal_length: f64,
+use rust_raytracing::{Camera};
+
+use crate::world::{Hittable, Sphere, HitRecord};
+
+pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera: &Camera, sphere: &Sphere) -> Vec<f64> {
+    let u = i / (image_width - 1) as f64;
+    let v = j / (image_height - 1) as f64;
+
+    // compute this automatically when camera is created
+    let theta = &camera.vfov;
+    let h = (theta/2.0).tan() * &camera.focal_length;
+    let viewport_height = 2.0 * h;
+    let viewport_width = &camera.aspect_ratio * viewport_height;
+
+    let x_direction = (u-0.5) * viewport_width;
+    let y_direction = (v-0.5) * viewport_height;
+    
+    // replace origin with camera origin
+    let light_ray = Ray::new(vec![0.0, 0.0, 0.0], vec![x_direction, y_direction, -1.0*&camera.focal_length]);
+    let record = sphere.hit(&light_ray, 0.0, 10000.0);
+    // NOTE: should pattern match here
+    // for Some, run the code block in lib.rs lines 66-74
+    // for None
+    match record {
+        Some(r) => {
+            let rec: HitRecord = r.into();
+            let dir = &light_ray.direction;
+            let orig = &light_ray.origin;
+            let position: Vec<f64> = orig.iter().zip(dir.iter()).map(|(x,y)| x + rec.t * y).collect();
+            let position = vec![position[0], position[1], position[2]+1.0];
+            let normal = unit_vector(&position);
+            let color_scale = vec![0.5 * normal[0] + 1.0, 0.5 * normal[1] + 1.0, 0.5 * normal[2] + 1.0];
+            return color_scale;
+        },
+        None => {
+            let unit_direction = unit_vector(&light_ray.direction);
+            let t = 0.5*(unit_direction[1] + 1.0);
+            let v1 = vec![0.5, 0.7, 1.0];
+            let v2 = vec![1.0, 1.0, 1.0];
+            let s = v2.iter().map(|x| x * t);
+            let v = v1.iter().map(|x| x * (1.0-t));
+            let color_scale = s.zip(v).map(|(x,y)| x + y).collect();
+            return color_scale
+        },
+    };
+
+
+
+    //get hittables as iterator
+    //hittables.iter().find(intersect?)
+        //intersect?<T: Hittable>(obj: T, ray: Ray)
+    //if intersection, compute the hit record (i.e. do the work of the current ray_color function)
+    //run code: ray_color(hittable, ray) -> hit_record
 }
 
-// improve this struct with new method in impl that automatically makes unit direction vector
 pub struct Ray {
     pub origin: Vec<f64>,
     pub direction: Vec<f64>,
@@ -44,10 +85,10 @@ pub fn write_color(pixel_color:Vec<f64>, samples_per_pixel:i64) -> Vec<u8>{
 
 impl Ray {
     pub fn new(origin: Vec<f64>, direction: Vec<f64>) -> Ray {
-        return Ray{
+        Ray{
             origin: origin,
             direction: unit_vector(&direction),
-        };
+        }
     }
     fn hit_sphere(&self, center: Vec<f64>, radius: f64, ray: &Ray) -> f64 {
         let oc = ray.origin.iter().zip(center.iter()).map(|(x, y)| x - y).collect();
@@ -84,29 +125,8 @@ impl Ray {
         return color_scale.collect();
     }
     fn clamp(x: f64, min: f64, max: f64) -> f64 {
-        if (x < min) { return min; }
-        if (x > max) { return max; }
+        if x < min { return min; }
+        if x > max { return max; }
         return x;
-    }
-}
-
-impl Camera {
-    pub fn new(vfov: f64, aspect_ratio: f64, focal_length: f64) -> Camera {
-        Camera { 
-            vfov: vfov.to_radians(),
-            aspect_ratio: (aspect_ratio),
-            focal_length: (focal_length) 
-        }
-    }
-    pub fn get_ray(&self, u: f64, v:f64) -> Ray {
-        let theta = &self.vfov;
-        let h = (theta/2.0).tan() * &self.focal_length;
-        let viewport_height = 2.0 * h;
-        let viewport_width = &self.aspect_ratio * viewport_height;
-
-        let x_direction = (u-0.5) * viewport_width;
-        let y_direction = (v-0.5) * viewport_height;
-        
-        return Ray::new(vec![0.0, 0.0, 0.0], vec![x_direction, y_direction, -1.0*&self.focal_length]);
     }
 }
