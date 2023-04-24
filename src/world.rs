@@ -17,15 +17,15 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn get_root(min:f64, max:f64, half_b:f64, discriminant:f64, a:f64) -> f64 {
+     fn get_root(min:f64, max:f64, half_b:f64, discriminant:f64, a:f64) -> Option<f64> {
         if discriminant < 0.0 {
-            -1.0
+            None
         } else if min < (-half_b - discriminant.sqrt()) / a  && max > (-half_b - discriminant.sqrt()) / a {
-            (-half_b - discriminant.sqrt()) / a
+            Some((-half_b - discriminant.sqrt()) / a)
         } else if min < (-half_b + discriminant.sqrt()) / a  && max > (-half_b + discriminant.sqrt()) / a {
-            (-half_b + discriminant.sqrt()) / a
+            Some((-half_b + discriminant.sqrt()) / a)
         } else {
-            -1.0
+            None
         }
     }
 }
@@ -38,17 +38,20 @@ impl Hittable for Sphere{
         let c = dot(&oc, &oc) - &self.radius*&self.radius;
         let discriminant = half_b*half_b - a*c;
         let root = Sphere::get_root(min,max,half_b,discriminant,a);
-        if root < 0.0 {
-            None
-        } else {
-            let p: Vec<f64> = ray.origin.iter().zip(ray.direction.iter()).map(|(x,y)| x + root * y).collect();
-            let n = p.iter().zip(ray.direction.iter()).map(|(x,y)| (x - y)/self.radius).collect();
-            Some(HitRecord{
-                point_of_contact: p,
-                normal: n,
-                t: root,
-                front_face: true,
-            })
+        match root {
+            Some(r) => {
+                let p: Vec<f64> = ray.origin.iter().zip(ray.direction.iter()).map(|(x,y)| x + r * y).collect();
+                let n: Vec<f64> = p.iter().zip(ray.direction.iter()).map(|(x,y)| (x - y)/self.radius).collect();
+                return Some(HitRecord{
+                    point_of_contact: p,
+                    normal: n,
+                    t: r,
+                    front_face: true,
+                });  
+            },
+            None => {
+                return None;
+            },
         }
     }
 }
