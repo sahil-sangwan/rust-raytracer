@@ -2,12 +2,9 @@ use crate::camera::{Camera};
 
 use crate::world::{Sphere, HitRecord, Hittable};
 
-pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera: &Camera, world: &Vec<Sphere>) -> Vec<f64> {
-    let u = i / (image_width - 1) as f64;
-    let v = j / (image_height - 1) as f64;
-
-    let x_direction = (u-0.5) * camera.viewport_width;
-    let y_direction = (v-0.5) * camera.viewport_height;
+pub fn compute_color_scale(width_scale:f64,height_scale:f64, camera: &Camera, world: &Vec<Sphere>) -> Vec<f64> {
+    let x_direction = (width_scale-0.5) * camera.viewport_width;
+    let y_direction = -(height_scale-0.5) * camera.viewport_height;
     
     let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
     
@@ -35,24 +32,17 @@ pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera:
     };
     
     let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
-    // let record: Option<HitRecord> = sphere.hit(&light_ray, 0.0, 10000.0);
     match record {
         Some(rec) => { // color the sphere
-            let dir = &light_ray.direction;
-            let orig = &light_ray.origin;
-            let position: Vec<f64> = orig.iter().zip(dir.iter()).map(|(x,y)| x + rec.t * y).collect();
-            let position = vec![position[0], position[1], position[2]+1.0];
-            let normal = unit_vector(&position);
-            let color_scale = vec![0.5 * (normal[0] + 1.0), 0.5 * (normal[1] + 1.0), 0.5 * (normal[2] + 1.0)];
+            let color_scale = vec![0.5 * (rec.normal[0] + 1.0), 0.5 * (rec.normal[1] + 1.0), 0.5 * (rec.normal[2] + 1.0)];
             return color_scale;
         },
         None => { // fall back to background
-            let unit_direction = unit_vector(&light_ray.direction);
-            let t = 0.5*(unit_direction[1] + 1.0);
+            let t = 0.5*(&light_ray.direction[1] + 1.0);
             let v1 = vec![0.5, 0.7, 1.0];
             let v2 = vec![1.0, 1.0, 1.0];
-            let s = v2.iter().map(|x| x * t);
-            let v = v1.iter().map(|x| x * (1.0-t));
+            let s = v1.iter().map(|x| x * t);
+            let v = v2.iter().map(|x| x * (1.0-t));
             let color_scale = s.zip(v).map(|(x,y)| x + y).collect();
             return color_scale
         },

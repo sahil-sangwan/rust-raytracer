@@ -24,23 +24,20 @@ fn main() {
         center: vec![0.0,0.0,-1.0],
         radius: 0.5,
     };
-    // the image is flipped
     let bg_sphere = Sphere {
-        center: vec![0.0, 100.5,-1.0], // the y axis should be negative
+        center: vec![0.0, -100.5,-1.0],
         radius: 100.0,
     };
 
     let world: Vec<Sphere> = vec![sphere, bg_sphere];
 
-    // let mut rng = thread_rng(); 
-
-    (0..image_height).into_par_iter().for_each(|j| {
+    (0..image_height).into_par_iter().rev().for_each(|j| {
         (0..image_width).into_par_iter().for_each(|i| {
-        // imgbuf.enumerate_pixels_mut().into_par_iter().for_each(|(i, j, pixel)| {
             // compute a ray sample at the pixel
             let sample_ray = |_x| -> Vec<f64> {
-
-                compute_color_scale(i as f64 + rand::random::<f64>(), j as f64 + rand::random::<f64>(), image_height, image_width, &camera, &world)
+                let width_scale = (i as f64 + rand::random::<f64>()) / (image_width - 1) as f64;
+                let height_scale = (j as f64 + rand::random::<f64>()) / (image_height - 1) as f64;
+                compute_color_scale(width_scale, height_scale, &camera, &world)
             };
             // sum the ray samples
             let vector_addition = {
@@ -53,7 +50,6 @@ fn main() {
             let pixel_array: [u8; 3] = write_color(color_coef, samples_per_pixel).try_into().unwrap();
             *imgbuf.lock().unwrap().get_pixel_mut(i, j) = image::Rgb(pixel_array);
 
-        // });
         });
     });
 
