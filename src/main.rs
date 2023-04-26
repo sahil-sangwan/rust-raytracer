@@ -15,10 +15,13 @@ fn main() {
     let image_width: u32 = 400;
     let image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
     let samples_per_pixel = 100; //for antialiasing
+    let vfov = 90.0;
+    let focal_length = 1.0;
+    let recursion_depth: u32 = 50;
 
     let path = Path::new("image.png");
     let imgbuf: Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>> = Mutex::new(ImageBuffer::new(image_width, image_height));
-    let camera = Camera::new(vec![0.0,0.0,0.0], 90.0, aspect_ratio, 1.0);
+    let camera = Camera::new(vec![0.0,0.0,0.0], vfov, aspect_ratio, focal_length);
 
     let sphere = Sphere {
         center: vec![0.0,0.0,-1.0],
@@ -37,7 +40,7 @@ fn main() {
             let sample_ray = |_x| -> Vec<f64> {
                 let width_scale = (i as f64 + rand::random::<f64>()) / (image_width - 1) as f64;
                 let height_scale = (j as f64 + rand::random::<f64>()) / (image_height - 1) as f64;
-                compute_color_scale(width_scale, height_scale, &camera, &world)
+                compute_color_scale(width_scale, height_scale, recursion_depth, &camera, &world)
             };
             // sum the ray samples
             let vector_addition = {

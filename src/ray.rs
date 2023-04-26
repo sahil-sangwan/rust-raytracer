@@ -2,12 +2,10 @@ use crate::camera::{Camera};
 
 use crate::world::{Sphere, HitRecord, Hittable};
 
-pub fn compute_color_scale(width_scale:f64,height_scale:f64, camera: &Camera, world: &Vec<Sphere>) -> Vec<f64> {
-    let x_direction = (width_scale-0.5) * camera.viewport_width;
-    let y_direction = -(height_scale-0.5) * camera.viewport_height;
-    
-    let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
-    
+pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64) -> Vec<f64> {
+    if depth <= 0 {
+        return vec![0.0,0.0,0.0];
+    }
     let object_hit_processor = {
         |acc:Option<HitRecord>, elem: &Sphere| 
         match elem.hit(&light_ray, 0.0, 10000.0) {
@@ -33,20 +31,30 @@ pub fn compute_color_scale(width_scale:f64,height_scale:f64, camera: &Camera, wo
     
     let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
     match record {
-        Some(rec) => { // color the sphere
-            let color_scale = vec![0.5 * (rec.normal[0] + 1.0), 0.5 * (rec.normal[1] + 1.0), 0.5 * (rec.normal[2] + 1.0)];
-            return color_scale;
+        Some(rec) => {
+            let reflected_ray = Ray::new(rec.point_of_contact, rec.normal);
+            color_scale_recursive(&reflected_ray, world, depth-1,shadow_scale*0.5)
+            // let color_scale: Vec<f64> = vec![0.5 * (rec.normal[0] + 1.0), 0.5 * (rec.normal[1] + 1.0), 0.5 * (rec.normal[2] + 1.0)];
+            // color_scale
         },
-        None => { // fall back to background
+        None => {
             let t = 0.5*(&light_ray.direction[1] + 1.0);
             let v1 = vec![0.5, 0.7, 1.0];
             let v2 = vec![1.0, 1.0, 1.0];
             let s = v1.iter().map(|x| x * t);
             let v = v2.iter().map(|x| x * (1.0-t));
             let color_scale = s.zip(v).map(|(x,y)| x + y).collect();
-            return color_scale
+            color_scale
         },
-    };
+    }
+}
+
+pub fn compute_color_scale(width_scale:f64, height_scale:f64, depth: u32, camera: &Camera, world: &Vec<Sphere>) -> Vec<f64> {
+    let x_direction = (width_scale-0.5) * camera.viewport_width;
+    let y_direction = -(height_scale-0.5) * camera.viewport_height;
+    let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
+    color_scale_recursive(&light_ray, world, depth, 1.0)
+    
 }
 
 pub fn unit_vector(vector: &Vec<f64>) -> Vec<f64> {
