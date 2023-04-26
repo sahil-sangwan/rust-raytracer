@@ -1,4 +1,4 @@
-use crate::ray::{Ray, dot, unit_vector};
+use crate::ray::{Ray, dot, normalize, negate_vector};
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, min: f64, max: f64,) -> Option<HitRecord>;
@@ -42,16 +42,25 @@ impl Hittable for Sphere{
             Some(r) => {
                 let p: Vec<f64> = ray.origin.iter().zip(ray.direction.iter()).map(|(x,y)| x + r * y).collect();
                 let n: Vec<f64> = p.iter().zip(self.center.iter()).map(|(x,y)| (x - y)/self.radius).collect();
-                let n_unit = unit_vector(&n);
-                return Some(HitRecord{
-                    point_of_contact: p,
-                    normal: n_unit,
-                    t: r,
-                    front_face: true,
-                });  
+                let n_unit = normalize(&n);
+                if dot(&n_unit, &ray.direction) < 0.0{
+                    Some(HitRecord{
+                        point_of_contact: p,
+                        normal: n_unit,
+                        t: r,
+                        front_face: true,
+                    })
+                } else {
+                    Some(HitRecord{
+                        point_of_contact: p,
+                        normal: negate_vector(&n_unit),
+                        t: r,
+                        front_face: false,
+                    })
+                }  
             },
             None => {
-                return None;
+                None
             },
         }
     }

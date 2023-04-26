@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::camera::{Camera};
 
 use crate::world::{Sphere, HitRecord, Hittable};
@@ -32,13 +34,11 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
     let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
     match record {
         Some(rec) => {
-            let reflected_ray = Ray::new(rec.point_of_contact, rec.normal);
+            let reflected_ray = Ray::new(rec.point_of_contact, sum(&rec.normal, &random_unit_sphere_vector()));
             color_scale_recursive(&reflected_ray, world, depth-1,shadow_scale*0.5)
-            // let color_scale: Vec<f64> = vec![0.5 * (rec.normal[0] + 1.0), 0.5 * (rec.normal[1] + 1.0), 0.5 * (rec.normal[2] + 1.0)];
-            // color_scale
         },
         None => {
-            let t = 0.5*(&light_ray.direction[1] + 1.0);
+            let t = 0.5*shadow_scale*(&light_ray.direction[1] + 1.0);
             let v1 = vec![0.5, 0.7, 1.0];
             let v2 = vec![1.0, 1.0, 1.0];
             let s = v1.iter().map(|x| x * t);
@@ -57,14 +57,37 @@ pub fn compute_color_scale(width_scale:f64, height_scale:f64, depth: u32, camera
     
 }
 
-pub fn unit_vector(vector: &Vec<f64>) -> Vec<f64> {
-    let vec_norm = vector.iter().map(|x| x*x).sum::<f64>().sqrt();
+pub fn sum(v1: &Vec<f64>, v2: &Vec<f64>) -> Vec<f64> {
+    let pairwise_iter = v1.iter().zip(v2.iter());
+    pairwise_iter.map(|(x, y)| x + y).collect()
+}
+
+pub fn l2_norm_squared(vector: &Vec<f64>) -> f64 {
+    vector.iter().map(|x| x*x).sum::<f64>()
+}
+
+pub fn normalize(vector: &Vec<f64>) -> Vec<f64> {
+    let vec_norm = l2_norm_squared(vector).sqrt();
     vector.iter().map(|x| x / vec_norm).collect()
 }
 
 pub fn dot(v1: &Vec<f64>, v2: &Vec<f64>) -> f64 {
     let pairwise_iter = v1.iter().zip(v2.iter());
     pairwise_iter.map(|(x, y)| x * y).sum()
+}
+
+pub fn negate_vector(v: &Vec<f64>) -> Vec<f64> {
+    v.iter().map(|cmp| cmp * -1.0).collect()
+}
+
+pub fn random_unit_sphere_vector() -> Vec<f64> {
+    let mut rng = rand::thread_rng();
+    loop {
+        let v = vec![rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)];
+        if l2_norm_squared(&v) < 1.0 {
+            return normalize(&v);
+        }
+    }
 }
 
 pub fn write_color(pixel_color_scale:Vec<f64>, samples_per_pixel:i64) -> Vec<u8>{
@@ -81,7 +104,7 @@ impl Ray {
     pub fn new(origin: Vec<f64>, direction: Vec<f64>) -> Ray {
         Ray{
             origin: origin,
-            direction: unit_vector(&direction),
+            direction: normalize(&direction),
         }
     }
 }
