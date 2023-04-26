@@ -2,11 +2,11 @@ mod camera;
 mod ray;
 mod world;
 use std::{path::Path, vec, sync::Mutex};
-use image::{ImageBuffer, buffer::EnumeratePixelsMut, Rgb};
+use image::{ImageBuffer, Rgb};
 use rayon::prelude::*;
 use ray::{compute_color_scale, write_color};
 use camera::Camera;
-use rand::{thread_rng, Rng};
+use rand;
 use world::Sphere;
 
 fn main() {
@@ -17,13 +17,20 @@ fn main() {
     let samples_per_pixel = 100; //for antialiasing
 
     let path = Path::new("image.png");
-    let mut imgbuf: Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>> = Mutex::new(ImageBuffer::new(image_width, image_height));
+    let imgbuf: Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>> = Mutex::new(ImageBuffer::new(image_width, image_height));
     let camera = Camera::new(vec![0.0,0.0,0.0], 90.0, aspect_ratio, 1.0);
 
     let sphere = Sphere {
         center: vec![0.0,0.0,-1.0],
         radius: 0.5,
     };
+    // the image is flipped
+    let bg_sphere = Sphere {
+        center: vec![0.0, 100.5,-1.0], // the y axis should be negative
+        radius: 100.0,
+    };
+
+    let world: Vec<Sphere> = vec![sphere, bg_sphere];
 
     // let mut rng = thread_rng(); 
 
@@ -33,7 +40,7 @@ fn main() {
             // compute a ray sample at the pixel
             let sample_ray = |_x| -> Vec<f64> {
 
-                compute_color_scale(i as f64 + rand::random::<f64>(), j as f64 + rand::random::<f64>(), image_height, image_width, &camera, &sphere)
+                compute_color_scale(i as f64 + rand::random::<f64>(), j as f64 + rand::random::<f64>(), image_height, image_width, &camera, &world)
             };
             // sum the ray samples
             let vector_addition = {

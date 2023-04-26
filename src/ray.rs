@@ -1,8 +1,8 @@
 use crate::camera::{Camera};
 
-use crate::world::{Hittable, Sphere, HitRecord};
+use crate::world::{Sphere, HitRecord, Hittable};
 
-pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera: &Camera, sphere: &Sphere) -> Vec<f64> {
+pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera: &Camera, world: &Vec<Sphere>) -> Vec<f64> {
     let u = i / (image_width - 1) as f64;
     let v = j / (image_height - 1) as f64;
 
@@ -10,7 +10,32 @@ pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera:
     let y_direction = (v-0.5) * camera.viewport_height;
     
     let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
-    let record: Option<HitRecord> = sphere.hit(&light_ray, 0.0, 10000.0);
+    
+    let object_hit_processor = {
+        |acc:Option<HitRecord>, elem: &Sphere| 
+        match elem.hit(&light_ray, 0.0, 10000.0) {
+            Some(rec) => {
+                match acc {
+                    Some(prev_rec) => {
+                        if prev_rec.t < rec.t {
+                            Some(prev_rec)
+                        } else {
+                            Some(rec)
+                        }
+                    }
+                    None => {
+                        Some(rec)
+                    }
+                }
+            }
+            None => {
+                acc
+            }
+        }
+    };
+    
+    let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
+    // let record: Option<HitRecord> = sphere.hit(&light_ray, 0.0, 10000.0);
     match record {
         Some(rec) => { // color the sphere
             let dir = &light_ray.direction;
@@ -18,7 +43,7 @@ pub fn compute_color_scale(i:f64,j:f64,image_height:u32,image_width:u32, camera:
             let position: Vec<f64> = orig.iter().zip(dir.iter()).map(|(x,y)| x + rec.t * y).collect();
             let position = vec![position[0], position[1], position[2]+1.0];
             let normal = unit_vector(&position);
-            let color_scale = vec![0.5 * normal[0] + 1.0, 0.5 * normal[1] + 1.0, 0.5 * normal[2] + 1.0];
+            let color_scale = vec![0.5 * (normal[0] + 1.0), 0.5 * (normal[1] + 1.0), 0.5 * (normal[2] + 1.0)];
             return color_scale;
         },
         None => { // fall back to background
