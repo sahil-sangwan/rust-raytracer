@@ -38,12 +38,12 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
             color_scale_recursive(&reflected_ray, world, depth-1,shadow_scale*0.5)
         },
         None => {
-            let t = 0.5*shadow_scale*(&light_ray.direction[1] + 1.0);
+            let t = 0.5*(&light_ray.direction[1]  + 1.0);
             let v1 = vec![0.5, 0.7, 1.0];
             let v2 = vec![1.0, 1.0, 1.0];
             let s = v1.iter().map(|x| x * t);
             let v = v2.iter().map(|x| x * (1.0-t));
-            let color_scale = s.zip(v).map(|(x,y)| x + y).collect();
+            let color_scale = s.zip(v).map(|(x,y)| (x + y) * shadow_scale).collect();
             color_scale
         },
     }
@@ -85,14 +85,14 @@ pub fn random_unit_sphere_vector() -> Vec<f64> {
     loop {
         let v = vec![rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)];
         if l2_norm_squared(&v) < 1.0 {
-            return normalize(&v);
+            return v;
         }
     }
 }
 
 pub fn write_color(pixel_color_scale:Vec<f64>, samples_per_pixel:i64) -> Vec<u8>{
     // Divide the color scale by the number of samples and apple to RGB component
-    pixel_color_scale.iter().map(|x| (256.0 * x / samples_per_pixel as f64) as u8).collect()
+    pixel_color_scale.iter().map(|x| (255.0 * x / samples_per_pixel as f64) as u8).collect()
 }
 
 pub struct Ray {
