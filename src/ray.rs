@@ -1,7 +1,5 @@
 use rand::Rng;
-
 use crate::camera::{Camera};
-
 use crate::world::{Sphere, HitRecord, Hittable};
 
 pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64) -> Vec<f64> {
@@ -10,7 +8,7 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
     }
     let object_hit_processor = {
         |acc:Option<HitRecord>, elem: &Sphere| 
-        match elem.hit(&light_ray, 0.0, 10000.0) {
+        match elem.hit(&light_ray, 0.001, 10000.0) {
             Some(rec) => {
                 match acc {
                     Some(prev_rec) => {
@@ -30,7 +28,7 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
             }
         }
     };
-    
+
     let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
     match record {
         Some(rec) => {
@@ -54,7 +52,6 @@ pub fn compute_color_scale(width_scale:f64, height_scale:f64, depth: u32, camera
     let y_direction = -(height_scale-0.5) * camera.viewport_height;
     let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
     color_scale_recursive(&light_ray, world, depth, 1.0)
-    
 }
 
 pub fn sum(v1: &Vec<f64>, v2: &Vec<f64>) -> Vec<f64> {
@@ -85,14 +82,14 @@ pub fn random_unit_sphere_vector() -> Vec<f64> {
     loop {
         let v = vec![rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)];
         if l2_norm_squared(&v) < 1.0 {
-            return v;
+            return normalize(&v);
         }
     }
 }
 
-pub fn write_color(pixel_color_scale:Vec<f64>, samples_per_pixel:i64) -> Vec<u8>{
+pub fn write_color(pixel_color_scale:Vec<f64>, samples_per_pixel:i64, gamma: u32) -> Vec<u8>{
     // Divide the color scale by the number of samples and apple to RGB component
-    pixel_color_scale.iter().map(|x| (255.0 * x / samples_per_pixel as f64) as u8).collect()
+    pixel_color_scale.iter().map(|x| (255.0 * (x / samples_per_pixel as f64).powf(1.0 / gamma as f64)) as u8).collect()
 }
 
 pub struct Ray {

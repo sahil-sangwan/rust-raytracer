@@ -18,6 +18,7 @@ fn main() {
     let vfov = 90.0;
     let focal_length = 1.0;
     let recursion_depth: u32 = 50;
+    let gamma: u32 = 2;
 
     let path = Path::new("image.png");
     let imgbuf: Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>> = Mutex::new(ImageBuffer::new(image_width, image_height));
@@ -50,7 +51,7 @@ fn main() {
             };
             let color_coef = (0..samples_per_pixel).into_par_iter().map(sample_ray).reduce(|| vec![0.0,0.0,0.0], vector_addition);
             // average the ray samples and multiply each scale component by 255 to get pixel color
-            let pixel_array: [u8; 3] = write_color(color_coef, samples_per_pixel).try_into().unwrap();
+            let pixel_array: [u8; 3] = write_color(color_coef, samples_per_pixel, gamma).try_into().unwrap();
             *imgbuf.lock().unwrap().get_pixel_mut(i, j) = image::Rgb(pixel_array);
 
         });
