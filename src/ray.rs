@@ -1,8 +1,8 @@
 use rand::Rng;
 use crate::camera::{Camera};
-use crate::world::{Sphere, HitRecord, Hittable};
+use crate::world::{Sphere, HitRecord, Hittable, Material, scatter};
 
-pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64) -> Vec<f64> {
+pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64, attenuator: Vec<f64>) -> Vec<f64> {
     if depth <= 0 {
         return vec![0.0,0.0,0.0];
     }
@@ -29,13 +29,25 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
         }
     };
 
-    let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
-    match record {
+    let ray_collision: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
+    match ray_collision {
         Some(rec) => {
             // if a valid scattered ray (dot product w normal ray is positive), then return ray attenuation vec * recursive call to color_scale
             // otherwise, return vec![0.0,0.0,0.0] (RGB = 000)
-            let reflected_ray = Ray::new(rec.point_of_contact, sum(&rec.normal, &random_unit_sphere_vector()));
-            color_scale_recursive(&reflected_ray, world, depth-1,shadow_scale*0.5)
+            let scattered_ray: Option<Ray> = scatter(&rec, light_ray);
+            // move the match into a function that also makes call to scatter function
+            match scattered_ray {
+                Some(ray) => {
+                    let attenuation = rec.albedo;
+                    let new_attenuator = attenuator.iter().zip(attenuation.iter()).map(|(x,y)| x * y).collect();
+                    color_scale_recursive(&ray, world, depth-1,shadow_scale*0.5, new_attenuator)
+                },
+                None => {
+                    vec![0.0,0.0,0.0]
+                },
+            }
+            // let reflected_ray = Ray::new(rec.point_of_contact, sum(&rec.normal, &random_unit_sphere_vector()));
+            // color_scale_recursive(&scattered_ray, world, depth-1,shadow_scale*0.5)
         },
         None => {
             let t = 0.5*(&light_ray.direction[1]  + 1.0);
@@ -43,8 +55,8 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
             let v2 = vec![1.0, 1.0, 1.0];
             let s = v1.iter().map(|x| x * t);
             let v = v2.iter().map(|x| x * (1.0-t));
-            let color_scale = s.zip(v).map(|(x,y)| (x + y) * shadow_scale).collect();
-            color_scale
+            let color_scale_iter = s.zip(v).map(|(x,y)| (x + y) * shadow_scale);
+            color_scale_iter.zip(attenuator.iter()).map(|(x,y)| x * y).collect()
         },
     }
 }
@@ -53,7 +65,7 @@ pub fn compute_color_scale(width_scale:f64, height_scale:f64, depth: u32, camera
     let x_direction = (width_scale-0.5) * camera.viewport_width;
     let y_direction = -(height_scale-0.5) * camera.viewport_height;
     let light_ray = Ray::new(vec![camera.x, camera.y, camera.z], vec![x_direction, y_direction, -1.0*camera.focal_length]);
-    color_scale_recursive(&light_ray, world, depth, 1.0)
+    color_scale_recursive(&light_ray, world, depth, 1.0, vec![1.0,1.0,1.0])
 }
 
 pub fn sum(v1: &Vec<f64>, v2: &Vec<f64>) -> Vec<f64> {

@@ -7,15 +7,22 @@ pub trait Hittable {
 pub enum Material {
 // incident ray, normal, point of contact, color attenuation vector
     // Metal(Ray, Vec<f64>, Vec<f64>, Vec<f64>),
-    Metal(Vec<f64>),
+    Metal,
     Lambertian,
 }
 
-pub fn scatter(mat: Material, hit_record: HitRecord, incident_ray: Ray) -> Option<Ray> {
-    match mat {
-        Material::Metal(albedo) => {
+pub fn albedo(material: Material) -> Vec<f64> {
+    match material {
+        Material::Metal => todo!(),
+        Material::Lambertian => todo!(),
+    }
+}
+
+pub fn scatter(hit_record: &HitRecord, incident_ray: &Ray) -> Option<Ray> {
+    match &hit_record.material {
+        Material::Metal => {
             let reflected: Vec<f64> = reflect(&incident_ray.direction, &hit_record.normal);
-            let scattered = Ray::new(hit_record.point_of_contact, reflected);
+            let scattered = Ray::new(hit_record.point_of_contact.clone(), reflected);
             let attenuation = albedo;
             if dot(&scattered.direction, &hit_record.normal) > 0.0 {
                 // return scattered ray and accumulate attenuation vector 
@@ -33,6 +40,8 @@ pub fn scatter(mat: Material, hit_record: HitRecord, incident_ray: Ray) -> Optio
 pub struct HitRecord {
     pub point_of_contact: Vec<f64>,
     pub normal: Vec<f64>,
+    pub material: Material,
+    pub albedo: Vec<f64>,
     pub t: f64,
     pub front_face: bool,
 }
@@ -40,7 +49,7 @@ pub struct HitRecord {
 pub struct Sphere {
     pub center: Vec<f64>,
     pub radius: f64,
-    pub mat: Material
+    pub albedo: Vec<f64>,
 }
 
 impl Sphere {
@@ -74,6 +83,8 @@ impl Hittable for Sphere{
                     Some(HitRecord{
                         point_of_contact: p,
                         normal: n_unit,
+                        material: Material::Metal,
+                        albedo: self.albedo.clone(),
                         t: r,
                         front_face: true,
                     })
@@ -81,6 +92,8 @@ impl Hittable for Sphere{
                     Some(HitRecord{
                         point_of_contact: p,
                         normal: negate_vector(&n_unit),
+                        material: Material::Metal,
+                        albedo: self.albedo.clone(),
                         t: r,
                         front_face: false,
                     })
