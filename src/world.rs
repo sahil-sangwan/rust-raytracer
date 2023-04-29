@@ -1,38 +1,29 @@
-use crate::ray::{Ray, dot, normalize, negate_vector, reflect};
+use crate::ray::{Ray, dot, normalize, negate_vector, reflect, random_unit_sphere_vector, sum};
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, min: f64, max: f64,) -> Option<HitRecord>;
 }
 
+#[derive(Clone, Copy)]
 pub enum Material {
-// incident ray, normal, point of contact, color attenuation vector
-    // Metal(Ray, Vec<f64>, Vec<f64>, Vec<f64>),
     Metal,
     Lambertian,
 }
 
-pub fn albedo(material: Material) -> Vec<f64> {
-    match material {
-        Material::Metal => todo!(),
-        Material::Lambertian => todo!(),
-    }
-}
-
 pub fn scatter(hit_record: &HitRecord, incident_ray: &Ray) -> Option<Ray> {
-    match &hit_record.material {
+    match hit_record.material {
         Material::Metal => {
+            // must add randomness to direction of reflected ray
             let reflected: Vec<f64> = reflect(&incident_ray.direction, &hit_record.normal);
             let scattered = Ray::new(hit_record.point_of_contact.clone(), reflected);
-            let attenuation = albedo;
             if dot(&scattered.direction, &hit_record.normal) > 0.0 {
-                // return scattered ray and accumulate attenuation vector 
                 Some(scattered)
             } else {
                 None
             }
         },
         Material::Lambertian => {
-            todo!()
+            Some(Ray::new(hit_record.point_of_contact.clone(), sum(&hit_record.normal, &random_unit_sphere_vector())))
         },
     }
 }
@@ -50,6 +41,7 @@ pub struct Sphere {
     pub center: Vec<f64>,
     pub radius: f64,
     pub albedo: Vec<f64>,
+    pub material: Material
 }
 
 impl Sphere {
@@ -83,7 +75,7 @@ impl Hittable for Sphere{
                     Some(HitRecord{
                         point_of_contact: p,
                         normal: n_unit,
-                        material: Material::Metal,
+                        material: self.material,
                         albedo: self.albedo.clone(),
                         t: r,
                         front_face: true,
@@ -92,7 +84,7 @@ impl Hittable for Sphere{
                     Some(HitRecord{
                         point_of_contact: p,
                         normal: negate_vector(&n_unit),
-                        material: Material::Metal,
+                        material: self.material,
                         albedo: self.albedo.clone(),
                         t: r,
                         front_face: false,

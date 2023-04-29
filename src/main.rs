@@ -27,12 +27,14 @@ fn main() {
     let sphere = Sphere {
         center: vec![0.0,0.0,-1.0],
         radius: 0.5,
-        albedo: vec![0.8, 0.8, 0.8],
+        albedo: vec![0.8, 0.6, 0.2],
+        material: world::Material::Metal,
     };
     let bg_sphere = Sphere {
         center: vec![0.0, -100.5,-1.0],
         radius: 100.0,
-        albedo: vec![0.8, 0.6, 0.2],
+        albedo: vec![0.8, 0.8, 0.8],
+        material: world::Material::Lambertian,
     };
 
     let world: Vec<Sphere> = vec![sphere, bg_sphere];

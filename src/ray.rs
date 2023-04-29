@@ -1,6 +1,6 @@
 use rand::Rng;
 use crate::camera::{Camera};
-use crate::world::{Sphere, HitRecord, Hittable, Material, scatter};
+use crate::world::{Sphere, HitRecord, Hittable, scatter};
 
 pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64, attenuator: Vec<f64>) -> Vec<f64> {
     if depth <= 0 {
@@ -32,8 +32,6 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
     let ray_collision: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
     match ray_collision {
         Some(rec) => {
-            // if a valid scattered ray (dot product w normal ray is positive), then return ray attenuation vec * recursive call to color_scale
-            // otherwise, return vec![0.0,0.0,0.0] (RGB = 000)
             let scattered_ray: Option<Ray> = scatter(&rec, light_ray);
             // move the match into a function that also makes call to scatter function
             match scattered_ray {
@@ -46,8 +44,6 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
                     vec![0.0,0.0,0.0]
                 },
             }
-            // let reflected_ray = Ray::new(rec.point_of_contact, sum(&rec.normal, &random_unit_sphere_vector()));
-            // color_scale_recursive(&scattered_ray, world, depth-1,shadow_scale*0.5)
         },
         None => {
             let t = 0.5*(&light_ray.direction[1]  + 1.0);
