@@ -32,6 +32,8 @@ pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, s
     let record: Option<HitRecord> = world.iter().fold(None, object_hit_processor);
     match record {
         Some(rec) => {
+            // if a valid scattered ray (dot product w normal ray is positive), then return ray attenuation vec * recursive call to color_scale
+            // otherwise, return vec![0.0,0.0,0.0] (RGB = 000)
             let reflected_ray = Ray::new(rec.point_of_contact, sum(&rec.normal, &random_unit_sphere_vector()));
             color_scale_recursive(&reflected_ray, world, depth-1,shadow_scale*0.5)
         },
@@ -85,6 +87,11 @@ pub fn random_unit_sphere_vector() -> Vec<f64> {
             return normalize(&v);
         }
     }
+}
+
+pub fn reflect(incoming: &Vec<f64>, normal: &Vec<f64>) -> Vec<f64> {
+    let bounce_length = -2.0 * dot(&incoming,&normal);
+    incoming.iter().zip(normal.iter()).map(|(x,y)| x + bounce_length * y).collect()
 }
 
 pub fn write_color(pixel_color_scale:Vec<f64>, samples_per_pixel:i64, gamma: u32) -> Vec<u8>{

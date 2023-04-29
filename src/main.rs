@@ -27,10 +27,12 @@ fn main() {
     let sphere = Sphere {
         center: vec![0.0,0.0,-1.0],
         radius: 0.5,
+        mat: world::Material::Metal(vec![0.5,0.7,1.0]),
     };
     let bg_sphere = Sphere {
         center: vec![0.0, -100.5,-1.0],
         radius: 100.0,
+        mat: world::Material::Metal(vec![0.5,0.7,1.0]),
     };
 
     let world: Vec<Sphere> = vec![sphere, bg_sphere];

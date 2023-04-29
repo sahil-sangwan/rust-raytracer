@@ -1,7 +1,33 @@
-use crate::ray::{Ray, dot, normalize, negate_vector};
+use crate::ray::{Ray, dot, normalize, negate_vector, reflect};
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, min: f64, max: f64,) -> Option<HitRecord>;
+}
+
+pub enum Material {
+// incident ray, normal, point of contact, color attenuation vector
+    // Metal(Ray, Vec<f64>, Vec<f64>, Vec<f64>),
+    Metal(Vec<f64>),
+    Lambertian,
+}
+
+pub fn scatter(mat: Material, hit_record: HitRecord, incident_ray: Ray) -> Option<Ray> {
+    match mat {
+        Material::Metal(albedo) => {
+            let reflected: Vec<f64> = reflect(&incident_ray.direction, &hit_record.normal);
+            let scattered = Ray::new(hit_record.point_of_contact, reflected);
+            let attenuation = albedo;
+            if dot(&scattered.direction, &hit_record.normal) > 0.0 {
+                // return scattered ray and accumulate attenuation vector 
+                Some(scattered)
+            } else {
+                None
+            }
+        },
+        Material::Lambertian => {
+            todo!()
+        },
+    }
 }
 
 pub struct HitRecord {
@@ -14,6 +40,7 @@ pub struct HitRecord {
 pub struct Sphere {
     pub center: Vec<f64>,
     pub radius: f64,
+    pub mat: Material
 }
 
 impl Sphere {
