@@ -27,8 +27,8 @@ fn main() {
     let sphere = Sphere {
         center: vec![0.0,0.0,-1.0],
         radius: 0.5,
-        albedo: vec![0.8, 0.6, 0.2],
-        material: world::Material::Metal,
+        albedo: vec![0.7, 0.3, 0.3],
+        material: world::Material::Lambertian,
     };
     let bg_sphere = Sphere {
         center: vec![0.0, -100.5,-1.0],
@@ -36,8 +36,20 @@ fn main() {
         albedo: vec![0.8, 0.8, 0.8],
         material: world::Material::Lambertian,
     };
+    let right_sphere = Sphere {
+        center: vec![1.0,0.0,-1.0],
+        radius: 0.5,
+        albedo: vec![0.8, 0.6, 0.2],
+        material: world::Material::Metal,
+    };
+    let left_sphere = Sphere {
+        center: vec![-1.0,0.0,-1.0],
+        radius: 0.5,
+        albedo: vec![0.8, 0.8, 0.8],
+        material: world::Material::Metal,
+    };
 
-    let world: Vec<Sphere> = vec![sphere, bg_sphere];
+    let world: Vec<Sphere> = vec![sphere, bg_sphere, right_sphere, left_sphere];
 
     (0..image_height).into_par_iter().rev().for_each(|j| {
         (0..image_width).into_par_iter().for_each(|i| {
