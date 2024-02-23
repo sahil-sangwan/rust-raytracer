@@ -12,7 +12,7 @@ use world::Sphere;
 fn main() {
     // Image
     let aspect_ratio = 16.0 / 9.0;
-    let image_width: u32 = 400;
+    let image_width: u32 = 1440;
     let image_height: u32 = (image_width as f64 / aspect_ratio) as u32;
     let samples_per_pixel = 100; //for antialiasing
     let vfov = 90.0;
@@ -24,32 +24,32 @@ fn main() {
     let imgbuf: Mutex<ImageBuffer<Rgb<u8>, Vec<u8>>> = Mutex::new(ImageBuffer::new(image_width, image_height));
     let camera = Camera::new(vec![0.0,0.0,0.0], vfov, aspect_ratio, focal_length);
 
-    let sphere = Sphere {
-        center: vec![0.0,0.0,-1.0],
-        radius: 0.5,
-        albedo: vec![0.7, 0.3, 0.3],
-        material: world::Material::Lambertian,
-    };
     let bg_sphere = Sphere {
         center: vec![0.0, -100.5,-1.0],
         radius: 100.0,
         albedo: vec![0.8, 0.8, 0.8],
         material: world::Material::Lambertian,
     };
-    let right_sphere = Sphere {
-        center: vec![1.0,0.0,-1.0],
+    let sphere = Sphere {
+        center: vec![0.95,0.0,-1.65],
+        radius: 0.5,
+        albedo: vec![0.7, 0.3, 0.3],
+        material: world::Material::Lambertian,
+    };
+    let back_sphere = Sphere {
+        center: vec![-1.0,0.0,-1.65],
         radius: 0.5,
         albedo: vec![0.8, 0.6, 0.2],
         material: world::Material::Metal,
     };
-    let left_sphere = Sphere {
-        center: vec![-1.0,0.0,-1.0],
-        radius: 0.5,
-        albedo: vec![0.8, 0.8, 0.8],
+    let fore_sphere = Sphere {
+        center: vec![0.25,-0.25,-1.0],
+        radius: 0.25,
+        albedo: vec![0.7, 0.7, 0.9],
         material: world::Material::Metal,
     };
 
-    let world: Vec<Sphere> = vec![sphere, bg_sphere, right_sphere, left_sphere];
+    let world: Vec<Sphere> = vec![back_sphere, sphere, bg_sphere,fore_sphere];
 
     (0..image_height).into_par_iter().rev().for_each(|j| {
         (0..image_width).into_par_iter().for_each(|i| {

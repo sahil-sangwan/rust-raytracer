@@ -2,12 +2,12 @@ use rand::Rng;
 use crate::camera::{Camera};
 use crate::world::{Sphere, HitRecord, Hittable, scatter};
 
-pub fn color_scale_recursive(light_ray: &Ray, world: &Vec<Sphere>, depth: u32, shadow_scale: f64, attenuator: Vec<f64>) -> Vec<f64> {
+pub fn color_scale_recursive<T: Hittable>(light_ray: &Ray, world: &Vec<T>, depth: u32, shadow_scale: f64, attenuator: Vec<f64>) -> Vec<f64> {
     if depth <= 0 {
         return vec![0.0,0.0,0.0];
     }
     let object_hit_processor = {
-        |acc:Option<HitRecord>, elem: &Sphere| 
+        |acc:Option<HitRecord>, elem: &T| 
         match elem.hit(&light_ray, 0.001, 10000.0) {
             Some(rec) => {
                 match acc {
